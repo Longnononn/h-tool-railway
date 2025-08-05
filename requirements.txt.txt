@@ -1,0 +1,10 @@
+cryptography
+requests
+bs4
+curl_cffi
+tabulate
+beautifulsoup4
+uiautomator2
+colorama
+pystyle
+termcolor

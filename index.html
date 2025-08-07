@@ -1,108 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Android-x86 9.0 Emulator via raw.githack + Google Drive ISO</title>
-  <style>
-    html, body {
-      margin: 0; height: 100%; background: #000; color: #fff;
-      font-family: monospace, monospace;
-    }
-    #controls {
-      position: absolute;
-      top: 10px; left: 10px;
-      background: rgba(0, 0, 0, 0.8);
-      padding: 10px;
-      border-radius: 5px;
-      z-index: 10;
-    }
-    #screen_container {
-      width: 100vw;
-      height: 100vh;
-    }
-    canvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-    button, select {
-      font-size: 14px;
-      margin-top: 5px;
-      width: 100%;
-      padding: 6px;
-      background: #222;
-      border: 1px solid #555;
-      color: white;
-      border-radius: 3px;
-      cursor: pointer;
-    }
-    button:hover, select:hover {
-      background: #444;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>Android-x86 9.0 Emulator - Load từng file riêng</title>
+<style>
+  html, body { margin:0; height:100%; background:#000; color:#fff; font-family: monospace; }
+  #controls { position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.8); padding:10px; border-radius:5px; z-index:10; }
+  #screen_container { width:100vw; height:100vh; }
+  canvas { width:100%; height:100%; display:block; }
+  button, select { font-size:14px; margin-top:5px; width:100%; padding:6px; background:#222; border:1px solid #555; color:#fff; border-radius:3px; cursor:pointer; }
+  button:hover, select:hover { background:#444; }
+</style>
 </head>
 <body>
-  <div id="controls">
-    <label for="mode">Mode:</label>
-    <select id="mode">
-      <option value="normal">Normal</option>
-      <option value="debug">Debug</option>
-    </select>
-    <button onclick="startEmulator()">Run Emulator</button>
-    <button onclick="stopEmulator()">Stop Emulator</button>
-  </div>
 
-  <div id="screen_container"></div>
+<div id="controls">
+  <label for="mode">Mode:</label>
+  <select id="mode">
+    <option value="normal">Normal</option>
+    <option value="debug">Debug</option>
+  </select>
+  <button id="runBtn">Run Emulator</button>
+  <button id="stopBtn">Stop Emulator</button>
+</div>
 
-  <script>
-    let emulator = null;
-    function startEmulator() {
-      if (emulator) {
-        emulator.stop();
-        emulator = null;
-      }
-      const mode = document.getElementById("mode").value;
-      const baseRaw = "https://raw.githack.com/Longnononn/h-tool-railway/main/";
-      const isoDrive = "https://drive.google.com/uc?export=download&id=1Q0kF7Wx12J2dOsbqptD7XC8IpwWirbcb";
+<div id="screen_container"></div>
 
-      const existingScript = document.getElementById("libv86script");
-      if (existingScript) {
-        existingScript.remove();
-      }
+<script>
+  let emulator = null;
 
-      const script = document.createElement("script");
-      script.id = "libv86script";
-      script.src = baseRaw + (mode === "debug" ? "libv86-debug.js" : "libv86.js");
-      script.onload = () => {
-        emulator = new V86Starter({
-          wasm_path: baseRaw + (mode === "debug" ? "v86-debug.wasm" : "v86.wasm"),
-          memory_size: 1024 * 1024 * 1024,
-          vga_memory_size: 8 * 1024 * 1024,
-          screen_container: document.getElementById("screen_container"),
-          bios: { url: baseRaw + "bios/seabios.bin" },
-          vga_bios: { url: baseRaw + "bios/vgabios.bin" },
-          cdrom: { url: isoDrive },
-          autostart: true
-        });
+  // Links riêng biệt cho từng file
+  const FILES = {
+    normal: {
+      libv86_js: "https://raw.githack.com/Longnononn/h-tool-railway/main/libv86.js",
+      wasm: "https://raw.githack.com/Longnononn/h-tool-railway/main/v86.wasm",
+    },
+    debug: {
+      libv86_js: "https://raw.githack.com/Longnononn/h-tool-railway/main/libv86-debug.js",
+      wasm: "https://raw.githack.com/Longnononn/h-tool-railway/main/v86-debug.wasm",
+    },
+    bios_seabios: "https://raw.githack.com/Longnononn/h-tool-railway/main/bios/seabios.bin",
+    bios_vgabios: "https://raw.githack.com/Longnononn/h-tool-railway/main/bios/vgabios.bin",
+    iso: "https://drive.google.com/uc?export=download&id=1Q0kF7Wx12J2dOsbqptD7XC8IpwWirbcb"
+  };
 
-        emulator.add_listener("emulator-message", (event) => {
-          console.log("[v86] " + event.detail);
-        });
-        emulator.add_listener("emulator-error", (event) => {
-          console.error("[v86 ERROR] " + event.detail);
-        });
-      };
-      document.body.appendChild(script);
+  function loadScript(url) {
+    return new Promise((resolve, reject) => {
+      const old = document.getElementById("libv86script");
+      if (old) old.remove();
+      const s = document.createElement("script");
+      s.src = url;
+      s.id = "libv86script";
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error(`Failed to load script: ${url}`));
+      document.body.appendChild(s);
+    });
+  }
+
+  async function startEmulator() {
+    if (emulator) {
+      emulator.stop();
+      emulator = null;
     }
-
-    function stopEmulator() {
-      if (emulator) {
-        emulator.stop();
-        emulator = null;
-        const screen = document.getElementById("screen_container");
-        screen.innerHTML = "";
-      }
+    const mode = document.getElementById("mode").value;
+    try {
+      await loadScript(FILES[mode].libv86_js);
+      emulator = new V86Starter({
+        wasm_path: FILES[mode].wasm,
+        memory_size: 1024*1024*1024,
+        vga_memory_size: 8*1024*1024,
+        screen_container: document.getElementById("screen_container"),
+        bios: { url: FILES.bios_seabios },
+        vga_bios: { url: FILES.bios_vgabios },
+        cdrom: { url: FILES.iso },
+        autostart: true,
+      });
+      emulator.add_listener("emulator-message", e => console.log("[v86]", e.detail));
+      emulator.add_listener("emulator-error", e => console.error("[v86 ERROR]", e.detail));
+    } catch(e) {
+      alert("Lỗi khi tải libv86.js hoặc khởi tạo emulator: " + e.message);
     }
-  </script>
+  }
+
+  function stopEmulator() {
+    if (emulator) {
+      emulator.stop();
+      emulator = null;
+      document.getElementById("screen_container").innerHTML = "";
+    }
+  }
+
+  document.getElementById("runBtn").addEventListener("click", startEmulator);
+  document.getElementById("stopBtn").addEventListener("click", stopEmulator);
+</script>
+
 </body>
 </html>

@@ -1,107 +1,108 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Android-x86 9.0 - v86 Emulator</title>
-    <!-- Tải Tailwind CSS từ CDN để có giao diện đẹp -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* CSS tối giản để đảm bảo emulator hoạt động tốt */
-        html, body {
-            height: 100%;
-            margin: 0;
-            background-color: #111827;
-            font-family: 'Inter', sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-        }
-        #screen_container {
-            width: 90vw; /* Chiếm 90% chiều rộng viewport */
-            height: 90vh; /* Chiếm 90% chiều cao viewport */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            background-color: #000;
-            border: 2px solid #374151;
-            border-radius: 0.75rem;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
-        }
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-        #loading-message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #9ca3af;
-            font-size: 1.5rem;
-            font-weight: 600;
-            text-align: center;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Android-x86 9.0 Emulator via GitHub + Google Drive ISO</title>
+  <style>
+    html, body {
+      margin: 0; height: 100%; background: #000; color: #fff;
+      font-family: monospace, monospace;
+    }
+    #controls {
+      position: absolute;
+      top: 10px; left: 10px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 10px;
+      border-radius: 5px;
+      z-index: 10;
+    }
+    #screen_container {
+      width: 100vw;
+      height: 100vh;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    button, select {
+      font-size: 14px;
+      margin-top: 5px;
+      width: 100%;
+      padding: 6px;
+      background: #222;
+      border: 1px solid #555;
+      color: white;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    button:hover, select:hover {
+      background: #444;
+    }
+  </style>
 </head>
 <body>
-    <h1 class="text-3xl font-bold text-gray-200 mb-4">Trình giả lập Android-x86</h1>
-    <div id="screen_container">
-        <canvas id="screen"></canvas>
-        <div id="loading-message">Đang tải V86...</div>
-    </div>
+  <div id="controls">
+    <label for="mode">Mode:</label>
+    <select id="mode">
+      <option value="normal">Normal</option>
+      <option value="debug">Debug</option>
+    </select>
+    <button onclick="startEmulator()">Run Emulator</button>
+    <button onclick="stopEmulator()">Stop Emulator</button>
+  </div>
 
-    <!-- Tải thư viện v86 từ CDN chính thức -->
-    <script src="https://copy.sh/v86/build/v86_all.js"></script>
+  <div id="screen_container"></div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            console.log("DOM loaded. Checking for V86Starter...");
-            
-            // Log ra để kiểm tra xem V86Starter có được định nghĩa hay không
-            if (typeof V86Starter === 'undefined') {
-                console.error("V86Starter không được định nghĩa. Có lỗi khi tải thư viện.");
-                document.getElementById('loading-message').innerText = "Lỗi: V86Starter không tồn tại. Vui lòng kiểm tra kết nối mạng và file thư viện.";
-                return;
-            }
+  <script>
+    let emulator = null;
+    function startEmulator() {
+      if (emulator) {
+        emulator.stop();
+        emulator = null;
+      }
+      const mode = document.getElementById("mode").value;
+      const baseGitHub = "https://raw.githack.com/Longnononn/h-tool-railway/main/";
+      const isoDrive = "https://drive.google.com/uc?export=download&id=1Q0kF7Wx12J2dOsbqptD7XC8IpwWirbcb";
 
-            console.log("V86Starter is defined. Initializing emulator...");
-            
-            const screenContainer = document.getElementById("screen_container");
-            const loadingMessage = document.getElementById("loading-message");
+      const existingScript = document.getElementById("libv86script");
+      if (existingScript) {
+        existingScript.remove();
+      }
 
-            try {
-                const emulator = new V86Starter({
-                    wasm_path: "v86.wasm",
-                    memory_size: 1024 * 1024 * 1024,
-                    vga_memory_size: 8 * 1024 * 1024,
-                    screen_container: screenContainer,
-                    bios: { url: "bios/seabios.bin" },
-                    vga_bios: { url: "bios/vgabios.bin" },
-                    cdrom: { url: "images/android-x86-9.0.iso" },
-                    autostart: true
-                });
-
-                emulator.add_listener("started", () => {
-                    console.log("Emulator started successfully.");
-                    loadingMessage.style.display = "none";
-                });
-
-                emulator.add_listener("emulator-stopped", (error) => {
-                    const errorMessage = error ? `Lỗi: Emulator đã dừng. (${error})` : "Emulator đã dừng.";
-                    console.error(errorMessage);
-                    loadingMessage.innerText = errorMessage;
-                    loadingMessage.style.display = "block";
-                });
-
-            } catch (e) {
-                console.error("Lỗi khi khởi tạo V86Starter:", e);
-                loadingMessage.innerText = `Lỗi nghiêm trọng khi khởi tạo: ${e.message}`;
-            }
+      const script = document.createElement("script");
+      script.id = "libv86script";
+      script.src = baseGitHub + (mode === "debug" ? "libv86-debug.js" : "libv86.js");
+      script.onload = () => {
+        emulator = new V86Starter({
+          wasm_path: baseGitHub + (mode === "debug" ? "v86-debug.wasm" : "v86.wasm"),
+          memory_size: 1024 * 1024 * 1024, // 1GB RAM
+          vga_memory_size: 8 * 1024 * 1024, // 8MB VGA memory
+          screen_container: document.getElementById("screen_container"),
+          bios: { url: baseGitHub + "bios/seabios.bin" },
+          vga_bios: { url: baseGitHub + "bios/vgabios.bin" },
+          cdrom: { url: isoDrive },
+          autostart: true
         });
-    </script>
+
+        emulator.add_listener("emulator-message", (event) => {
+          console.log("[v86] " + event.detail);
+        });
+        emulator.add_listener("emulator-error", (event) => {
+          console.error("[v86 ERROR] " + event.detail);
+        });
+      };
+      document.body.appendChild(script);
+    }
+
+    function stopEmulator() {
+      if (emulator) {
+        emulator.stop();
+        emulator = null;
+        const screen = document.getElementById("screen_container");
+        screen.innerHTML = "";
+      }
+    }
+  </script>
 </body>
 </html>

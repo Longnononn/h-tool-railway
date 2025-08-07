@@ -62,7 +62,7 @@
         emulator = null;
       }
       const mode = document.getElementById("mode").value;
-      const baseGitHub = "https://cdn.jsdelivr.net/gh/Longnononn/h-tool-railway@main/";
+      const baseRaw = "https://raw.githubusercontent.com/Longnononn/h-tool-railway/main/";
       const isoDrive = "https://drive.google.com/uc?export=download&id=1Q0kF7Wx12J2dOsbqptD7XC8IpwWirbcb";
 
       const existingScript = document.getElementById("libv86script");
@@ -72,15 +72,15 @@
 
       const script = document.createElement("script");
       script.id = "libv86script";
-      script.src = baseGitHub + (mode === "debug" ? "libv86-debug.js" : "libv86.js");
+      script.src = baseRaw + (mode === "debug" ? "libv86-debug.js" : "libv86.js");
       script.onload = () => {
         emulator = new V86Starter({
-          wasm_path: baseGitHub + (mode === "debug" ? "v86-debug.wasm" : "v86.wasm"),
+          wasm_path: baseRaw + (mode === "debug" ? "v86-debug.wasm" : "v86.wasm"),
           memory_size: 1024 * 1024 * 1024,
           vga_memory_size: 8 * 1024 * 1024,
           screen_container: document.getElementById("screen_container"),
-          bios: { url: baseGitHub + "bios/seabios.bin" },
-          vga_bios: { url: baseGitHub + "bios/vgabios.bin" },
+          bios: { url: baseRaw + "bios/seabios.bin" },
+          vga_bios: { url: baseRaw + "bios/vgabios.bin" },
           cdrom: { url: isoDrive },
           autostart: true
         });

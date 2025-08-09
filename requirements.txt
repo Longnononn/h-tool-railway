@@ -1,4 +1,4 @@
 discord.py
-openai
+openai>=1.0.0  # Hoặc chỉ cần "openai" để tự động lấy phiên bản mới nhất
 googletrans==4.0.0-rc1
 python-dotenv

@@ -1,6 +1,6 @@
 import os
 import discord
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 from openai import OpenAI
 from dotenv import load_dotenv
 

@@ -46,6 +46,7 @@ async def ask_huggingface(prompt):
         
         # Deep Translator tự động dịch
         translated = translator.translate(raw_reply)
+        
         return translated
     except Exception as e:
         return f"⚠️ Lỗi từ Hugging Face: {e}"
@@ -62,7 +63,15 @@ async def on_message(message):
 
     async with message.channel.typing():
         reply = await ask_huggingface(message.content)
-        await message.channel.send(reply)
+        
+        # Chia tin nhắn thành các phần 4000 ký tự và gửi
+        max_length = 4000
+        if len(reply) > max_length:
+            chunks = [reply[i:i + max_length] for i in range(0, len(reply), max_length)]
+            for chunk in chunks:
+                await message.channel.send(chunk)
+        else:
+            await message.channel.send(reply)
 
 # Chạy bot
 if __name__ == "__main__":

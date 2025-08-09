@@ -1,0 +1,71 @@
+import os
+import discord
+from googletrans import Translator
+from openai import OpenAI
+from dotenv import load_dotenv
+
+# Tải biến môi trường từ file .env nếu có
+load_dotenv()
+
+# --- 1. Cấu hình & Biến môi trường ---
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+HUGGINGFACE_TOKEN = os.getenv("HF_TOKEN")
+
+# Khởi tạo client OpenRouter
+try:
+    openrouter_client = OpenAI(
+        base_url="https://router.huggingface.co/v1",
+        api_key=HUGGINGFACE_TOKEN,
+    )
+except Exception as e:
+    print(f"Lỗi khởi tạo client OpenRouter: {e}")
+    openrouter_client = None
+
+# Khởi tạo Google Translate
+translator = Translator()
+
+# Cấu hình Discord client
+intents = discord.Intents.default()
+intents.message_content = True
+client = discord.Client(intents=intents)
+
+# --- 2. Hàm chính ---
+async def ask_huggingface(prompt):
+    """Gửi yêu cầu đến Hugging Face (qua OpenRouter) và dịch câu trả lời."""
+    if not openrouter_client:
+        return "⚠️ Lỗi: Client OpenRouter chưa được khởi tạo. Vui lòng kiểm tra lại token."
+    
+    try:
+        completion = openrouter_client.chat.completions.create(
+            model="openai/gpt-oss-120b:cerebras",
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+        )
+        raw_reply = completion.choices[0].message.content.strip()
+        lang = translator.detect(raw_reply).lang
+        if lang != "vi":
+            translated = translator.translate(raw_reply, dest="vi").text
+            return translated
+        else:
+            return raw_reply
+    except Exception as e:
+        return f"⚠️ Lỗi từ Hugging Face: {e}"
+
+# --- 3. Các sự kiện Discord ---
+@client.event
+async def on_ready():
+    print(f"🤖 Bot đã sẵn sàng: {client.user}")
+
+@client.event
+async def on_message(message):
+    if message.author == client.user:
+        return
+
+    async with message.channel.typing():
+        reply = await ask_huggingface(message.content)
+        await message.channel.send(reply)
+
+# Chạy bot
+if __name__ == "__main__":
+    client.run(DISCORD_TOKEN)

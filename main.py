@@ -22,7 +22,7 @@ except Exception as e:
     openrouter_client = None
 
 # Khởi tạo Google Translate
-translator = Translator()
+translator = GoogleTranslator(source='auto', target='vi')
 
 # Cấu hình Discord client
 intents = discord.Intents.default()
@@ -43,12 +43,10 @@ async def ask_huggingface(prompt):
             ],
         )
         raw_reply = completion.choices[0].message.content.strip()
-        lang = translator.detect(raw_reply).lang
-        if lang != "vi":
-            translated = translator.translate(raw_reply, dest="vi").text
-            return translated
-        else:
-            return raw_reply
+        
+        # Deep Translator tự động dịch
+        translated = translator.translate(raw_reply)
+        return translated
     except Exception as e:
         return f"⚠️ Lỗi từ Hugging Face: {e}"
 
